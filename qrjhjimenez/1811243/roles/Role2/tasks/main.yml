@@ -2,7 +2,7 @@
 # tasks file for roles/Role2
 - name: Creating a Directory for the sample website
   file:
-   path: ~/var/www/sampleweb
+   path: /var/www/sampleweb
    state: directory
    owner: nobody
    group: nogroup

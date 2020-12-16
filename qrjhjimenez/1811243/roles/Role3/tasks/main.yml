@@ -4,18 +4,19 @@
   copy:
    src: /etc/apache2/sites-available/000-default.conf
    remote_src: yes
-   dest: ~/sampleweb.conf
+   dest: /sampleweb.conf
 
 - name: Configuring files directory PART2
   copy:
-   src: ~/sampleweb.conf
+   src: /sampleweb.conf
    remote_src: yes
    dest: /etc/apache2/sites-available
 
 - name: Editing configuration file
-  lineinfile:
+  replace:
    path: /etc/apache2/sites-available/sampleweb.conf
-   line: "ServiceAdmin ryan@example.com"
+   regexp: "ServerAdmin webmaster@localhost"
+   replace: "ServerAdmin ryan@example.com"
 
 - name: Configuring document root
   replace:
@@ -24,11 +25,15 @@
    replace: '/var/www/sampleweb'
 
 - name: Setting Server name
-  lineinfile:
+  replace:
    path:  /etc/apache2/sites-available/sampleweb.conf
-   line: "ServerName sampleweb.example.com"
+   regexp: "#ServerName www.example.com"
+   replace: "ServerName sampleweb.example.com"
 
-- name: Restarting Apache
+- name: Activating Virtual Host
+  command: a2ensite sampleweb.conf
+
+- name: Reloading Apache
   service:
    name: apache2
-   state: restarted
+   state: reloaded
