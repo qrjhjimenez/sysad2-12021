@@ -1,0 +1,15 @@
+---
+- name: RUNNING ROLE1
+  hosts: ubuntu
+  roles:
+   - Downloading
+
+- name: RUNNING ROLE2
+  hosts: ubuntu
+  roles:
+   - InstallingCore
+
+- name: RUNNING ROLE3	
+  hosts: ubuntu
+  roles:
+   - InstallingPlug
