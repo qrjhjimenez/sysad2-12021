@@ -1,0 +1,7 @@
+---
+- name: Installing in ubuntu
+  hosts: ubuntu
+  vars_files:
+   - config.yaml
+  roles:
+   - ubuntu
