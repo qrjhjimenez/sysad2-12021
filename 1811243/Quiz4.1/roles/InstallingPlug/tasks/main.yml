@@ -21,8 +21,3 @@
    chdir: /downloads/nagios-plugins-2.3.3
    target: install
   become: yes
-
-- name: Starting Nagios Service
-  service:
-   name: nagios
-   state: started
