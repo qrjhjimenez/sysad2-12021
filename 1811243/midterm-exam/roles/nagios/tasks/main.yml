@@ -143,8 +143,3 @@
    target: install
   become: yes
 
-- name: Starting Nagios Service
-  service:
-   name: nagios
-   state: started
-
