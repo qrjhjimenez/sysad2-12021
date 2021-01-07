@@ -1,26 +1,26 @@
 ---
-# tasks file for roles/ubuntu
-
+# tasks file for roles/centos
 #Elasticsearch
-- name: Installing java
-  apt:
-   name: openjdk-11-jdk
+- name: Installing Java
+  yum:
+   name: java-11-openjdk-devel
+   state: latest
    update_cache: yes
 
 - name: Importing the ELK public GPG key into APT
-  apt_key:
-   url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+  rpm_key:
+   key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
    state: present
 
 - name: Adding ELK source list
-  lineinfile: 
-   path: /etc/apt/sources.list.d/elastic-7.x.list
-   line: '{{ elastic_source }}'
-   create: yes
+  copy:
+   src: needed_files/elasticsearch.repo
+   dest: /etc/yum.repos.d/
 
 - name: Install Elasticsearch
-  apt:
+  yum:
    name: elasticsearch
+   state: latest
    update_cache: yes
 
 - name: Configuring cluster name in elasticsearch.yml
@@ -66,13 +66,13 @@
    state: started
 
 #Kibana
-- name: Installing Dependency for Kibana
-  apt:
+- name: Installing Dependency
+  yum:
    name: nginx
    update_cache: yes
 
 - name: Installing Kibana
-  apt:
+  yum:
    name: kibana
    update_cache: yes
 
@@ -83,7 +83,7 @@
    state: started
 
 - name: Installing pip for htpasswd
-  apt: 
+  yum:
    name: python3-pip
    state: latest
    update_cache: yes
@@ -102,14 +102,7 @@
 - name: Creating Nginx Virtual Host Configuration file
   copy:
    src: needed_files/kibana_config
-   dest: /etc/nginx/sites-available
-
-- name: Creating hard link for kibana
-  file:
-   src: /etc/nginx/sites-available/kibana_config
-   dest: /etc/nginx/sites-enabled/kibana_config
-   remote_src: 'yes'
-   state: link
+   dest: /etc/nginx/conf.d
 
 - name: Restarting nginx
   service:
@@ -118,12 +111,12 @@
 
 #Logstash
 - name: Installing Logstash
-  apt:
+  yum:
    name: logstash
    update_cache: yes
 
 - name: Installing Filebeat
-  apt:
+  yum:
    name: filebeat
    update_cache: yes
 
@@ -185,23 +178,31 @@
    state: started
    enabled: yes
 
-#Stoping Nginx service for nagios
-- name: Stoping Nginx service to run apache
+#Stop Nginx for nagios
+- name: Stoping nginx service to be able to run nagios
   service:
    name: nginx
    state: stopped
 
 #Nagios
 - name: Installing required Packages
-  apt:
+  yum:
    name:
-    - apache2
-    - libapache2-mod-php
-    - build-essential
-    - libgd-dev
+    - httpd
+    - gcc
+    - glibc
+    - glibc-common
+    - gd-devel
+    - perl
+    - postfix
     - unzip
    state: latest
    update_cache: yes
+
+- name: Start httpd
+  service:
+   name: httpd
+   state: started
 
 - name: Creating nagios group
   group:
@@ -221,6 +222,12 @@
    group: nagios
    password: '{{ naguser_pass }}'
 
+- name: Add httpd to nagios group
+  user:
+   name: apache
+   groups: nagios
+   append: yes
+
 - name: Adding nagios user group for External Command
   user:
    name: nagios
@@ -237,17 +244,10 @@
   file:
    path: /downloads
    state: directory
-   owner: nobody
-   group: nogroup
 
 - name: Downloading Nagios
   get_url:
    url: http://prdownloads.sourceforge.net/sourceforge/nagios/nagios-4.2.1.tar.gz
-   dest: /downloads
-
-- name: Downloading Plugins
-  get_url:
-   url: https://nagios-plugins.org/download/nagios-plugins-2.3.3.tar.gz
    dest: /downloads
 
 - name: Extracting Nagios Core
@@ -256,8 +256,13 @@
    dest: /downloads
    remote_src: yes
 
+- name: Creating Virtual Host Directory
+  file:
+   path: /etc/httpd/conf.d
+   state: directory
+
 - name: Configuring Nagios Script
-  shell: ./configure --with-command-group=nagcmd --with-command-group=nagcmd --with-httpd_conf=/etc/apache2/sites-enabled/
+  shell: ./configure --with-command-group=nagcmd --with-command-group=nagcmd --with-httpd_conf=/etc/httpd/conf.d
   args:
    chdir: /downloads/nagios-4.2.1
 
@@ -290,7 +295,6 @@
   make:
    chdir: /downloads/nagios-4.2.1
    target: install-webconf
-
 - name: Creating nagiosadmin account
   htpasswd:
     path: /usr/local/nagios/etc/htpasswd.users
@@ -299,60 +303,42 @@
 
 - name: Restarting Apache
   service:
-   name: apache2
+   name: httpd
    state: reloaded
 
-- name: Extracting Nagios Plugins
-  unarchive:
-   src: /downloads/nagios-plugins-2.3.3.tar.gz
-   dest: /downloads
-   remote_src: yes
-
-- name: Configuring Nagios Plugin Script
-  shell: ./configure --with-nagios-user=nagios --with-nagios-group=nagios
-  args:
-   chdir: /downloads/nagios-plugins-2.3.3
-
-- name: Compiling Nagios Plugins PART1
-  make:
-   chdir: /downloads/nagios-plugins-2.3.3
-  become: yes
-
-- name: Compiling Nagios Plugins PART2
-  make:
-   chdir: /downloads/nagios-plugins-2.3.3
-   target: install
-  become: yes
-
-
-#Stoping apache
-- name: Stoping Apache to run nginx for grafana
+#Stop apache for grafana
+- name: Stop apache service to be able to run grafana
   service:
-   name: apache2
+   name: httpd
    state: stopped
 
 #Grafana
 - name: Importing the Grafana public GPG key into APT
-  apt_key:
-   url: https://packages.grafana.com/gpg.key
+  rpm_key:
+   key: https://packages.grafana.com/gpg.key
    state: present
 
-- name: Adding Grafana source list
-  apt_repository:
-    repo: deb https://packages.grafana.com/oss/deb stable main
-    state: present
+- name: Adding ELK source list
+  copy:
+   src: needed_files/grafana.repo
+   dest: /etc/yum.repos.d/
 
 - name: Installing Grafana
-  apt:
+  yum:
    name: grafana
+   state: latest
    update_cache: yes
-
 
 - name: Starting Grafana server
   service:
    name: grafana-server
    state: started
    enabled: yes
+
+- name: a
+  yum:
+   name: nginx
+   state: latest
 
 - name: Configuring Nginx
   copy:
@@ -388,16 +374,12 @@
   file:
    path: /etc/prometheus
    state: directory
-   group: nogroup
-   owner: nobody
    mode: '0755'
 
 - name: Creating Directory for /var/lib/prometheus
   file:
    path: /var/lib/prometheus
    state: directory
-   group: nogroup
-   owner: nobody
    mode: '0755'
 
 - name: Downloading Prometheus
@@ -435,7 +417,7 @@
 
 - name: Copying consoles to /etc/prometheus directory
   shell: 'cp -r /downloads/prometheus-2.0.0.linux-amd64/consoles /etc/prometheus'
-   
+
 - name: Copying console library to /etc/prometheus directory
   shell: 'cp -r /downloads/prometheus-2.0.0.linux-amd64/console_libraries /etc/prometheus'
 
@@ -458,3 +440,4 @@
    name: prometheus
    enabled: yes
    state: started
+
