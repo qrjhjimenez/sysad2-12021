@@ -1,5 +1,5 @@
-###├── ansible.cfg
-###├── inventoryq5
-###├── logstash.conf
-###├── quiz5.yml
-###└── roles
+###├── ansible.cfg 
+###├── inventoryq5 
+###├── logstash.conf 
+###├── quiz5.yml 
+###└── roles 
