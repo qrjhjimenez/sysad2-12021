@@ -23,6 +23,12 @@
    owner: nobody
    mode: '0755'
 
+- name: Creating Directoru named downloads
+  file:
+   path: ./downloads
+   state: directory
+   owner: nobody
+   group: nogroup
 
 - name: Creating Directory for /var/lib/prometheus
   file:
@@ -35,23 +41,22 @@
 - name: Downloading Prometheus
   get_url:
    url:  https://github.com/prometheus/prometheus/releases/download/v2.0.0/prometheus-2.0.0.linux-amd64.tar.gz
-   dest: /downloads
+   dest: ./downloads
 
 - name: Extracting prometheus file
-  unarchive:
-   src: /downloads/prometheus-2.0.0.linux-amd64.tar.gz
-   dest: /downloads
-   remote_src: True
+  shell: 'tar xvf prometheus-2.0.0.linux-amd64.tar.gz'
+  args:
+   chdir: ./downloads
 
 - name: Copying Prometheus to local
   copy:
-   src: /downloads/prometheus-2.0.0.linux-amd64/prometheus
+   src: ./downloads/prometheus-2.0.0.linux-amd64/prometheus
    dest: /usr/local/bin/
    remote_src: True
 
 - name: Copying Prometool to local
   copy:
-   src: /downloads/prometheus-2.0.0.linux-amd64/promtool
+   src: ./downloads/prometheus-2.0.0.linux-amd64/promtool
    dest: /usr/local/bin/
    remote_src: True
 
@@ -66,10 +71,10 @@
    mode: u+x,g+x,o+x
 
 - name: Copying consoles to /etc/prometheus directory
-  shell: 'cp -r /downloads/prometheus-2.0.0.linux-amd64/consoles /etc/prometheus'
+  shell: 'cp -r ./downloads/prometheus-2.0.0.linux-amd64/consoles /etc/prometheus'
    
 - name: Copying console library to /etc/prometheus directory
-  shell: 'cp -r /downloads/prometheus-2.0.0.linux-amd64/console_libraries /etc/prometheus'
+  shell: 'cp -r ./downloads/prometheus-2.0.0.linux-amd64/console_libraries /etc/prometheus'
 
 - name: Creating Prometheus configuration
   copy:
