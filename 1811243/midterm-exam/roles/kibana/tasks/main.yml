@@ -55,8 +55,8 @@
 
 - name: Creating hard link for kibana
   file:
-   src: /etc/nginx/sites-available/kibana 
-   dest: /etc/nginx/sites-enabled/kibana
+   src: /etc/nginx/sites-available/kibana_config
+   dest: /etc/nginx/sites-enabled/kibana_config
    remote_src: 'yes'
    state: link
 
