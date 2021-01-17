@@ -5,7 +5,7 @@
    name: git
    state: latest
 
-- name: Clone Prelim Exam branch on centos
+- name: Clone Prelim Exam branch on Opensuse
   git:
     repo: '{{ prelim_exam }}'
     dest: ./prelim-exam
